@@ -14,20 +14,122 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
-data "aws_subnet" "existing_sub" {
-  id = "subnet-12a8ab3f"
+#data "aws_subnet" "existing_sub" {
+#  id = "subnet-12a8ab3f"
+#}
+
+#data "aws_security_group" "existing_sg" {
+#  id = "sg-feb60481"
+#}
+
+
+provider "aws" {
+  region = "us-east-1" # Change this to your preferred region
 }
 
-data "aws_security_group" "existing_sg" {
-  id = "sg-feb60481"
+# ------------------------------
+# 1. Create VPC
+# ------------------------------
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "my-vpc"
+  }
 }
+
+# ------------------------------
+# 2. Create Subnet
+# ------------------------------
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1a"
+
+  tags = {
+    Name = "public-subnet"
+  }
+}
+
+# ------------------------------
+# 3. Create Internet Gateway
+# ------------------------------
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "my-igw"
+  }
+}
+
+# ------------------------------
+# 4. Create Route Table and Route
+# ------------------------------
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+resource "aws_route" "internet_access" {
+  route_table_id         = aws_route_table.public_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+}
+
+# ------------------------------
+# 5. Associate Subnet with Route Table
+# ------------------------------
+resource "aws_route_table_association" "public_assoc" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# ------------------------------
+# 6. Create Security Group
+# ------------------------------
+resource "aws_security_group" "allow_ssh_http" {
+  name        = "allow-ssh-http"
+  description = "Allow SSH and HTTP traffic"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "allow-ssh-http"
+  }
+}
+
 
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = "t3.nano"
 
-  subnet_id     = data.aws_subnet.existing_sub.id                # Explicitly specify subnet
-  vpc_security_group_ids = [data.aws_security_group.existing_sg.id]   # use IDs
+  subnet_id              = aws_subnet.public_subnet.id
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
 
   tags = {
     Name = "HelloWorld"

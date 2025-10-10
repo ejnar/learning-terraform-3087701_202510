@@ -14,13 +14,20 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
+data "aws_subnet" "existing_sub" {
+  id = "subnet-12a8ab3f"
+}
+
+data "aws_security_group" "existing_sg" {
+  id = "sg-feb60481"
+}
 
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = "t3.nano"
 
-  subnet_id     = aws_subnet.subnet-12a8ab3f.id  # Explicitly specify subnet
-  vpc_security_group_ids = [aws_security_group.sg-feb60481.id] # use IDs
+  subnet_id     = data.aws_subnet.existing_sub.id                # Explicitly specify subnet
+  vpc_security_group_ids = [data.aws_security_group.existing_sg.id]   # use IDs
 
   tags = {
     Name = "HelloWorld"

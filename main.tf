@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "us-east-1" # Change this to your preferred region
+}
+
 data "aws_ami" "app_ami" {
   most_recent = true
 
@@ -12,19 +16,6 @@ data "aws_ami" "app_ami" {
   }
 
   owners = ["979382823631"] # Bitnami
-}
-
-#data "aws_subnet" "existing_sub" {
-#  id = "subnet-12a8ab3f"
-#}
-
-#data "aws_security_group" "existing_sg" {
-#  id = "sg-feb60481"
-#}
-
-
-provider "aws" {
-  region = "us-east-1" # Change this to your preferred region
 }
 
 # ------------------------------

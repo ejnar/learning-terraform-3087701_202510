@@ -41,11 +41,12 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
+
 # ------------------------------
 # 3. Create Internet Gateway
 # ------------------------------
 resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
+  vpc_id = module.web_vpc.vpc_id
   tags = {
     Name = "my-igw"
   }
@@ -55,7 +56,7 @@ resource "aws_internet_gateway" "igw" {
 # 4. Create Route Table and Route
 # ------------------------------
 resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.main.id
+  vpc_id = module.web_vpc.vpc_id
   tags = {
     Name = "public-route-table"
   }
@@ -71,7 +72,7 @@ resource "aws_route" "internet_access" {
 # 5. Associate Subnet with Route Table
 # ------------------------------
 resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public_subnet.id
+  subnet_id      = module.web_vpc.public_subnets[0]
   route_table_id = aws_route_table.public_rt.id
 }
 

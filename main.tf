@@ -124,9 +124,24 @@ resource "aws_instance" "web" {
   instance_type = var.instance_type
 
   subnet_id              = aws_subnet.public_subnet.id
-  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+  vpc_security_group_ids = [module.web-security-group.security_group_id]
 
   tags = {
     Name = "HelloWorld"
   }
+}
+
+module "web-security-group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "5.3.1"
+  name = web
+
+  vpc_id              = aws_vpc.main.id
+
+  ingress_rules       = ["http-80-tcp","https-443-tcp"]
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+
+  egress_rules        = ["all-all"]
+  egress_cidr_blocks  = ["0.0.0.0/0"]
+
 }

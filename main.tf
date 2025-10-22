@@ -14,6 +14,7 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
+
 # ------------------------------
 # 1. Create VPC
 # ------------------------------
@@ -74,69 +75,40 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# ------------------------------
-# 6. Create Security Group
-# ------------------------------
-#resource "aws_security_group" "allow_ssh_http" {
-#  name        = "allow-ssh-http"
-#  description = "Allow SSH and HTTP traffic"
-#  vpc_id      = aws_vpc.main.id
-
-#  ingress {
-#    description = "SSH"
-#    from_port   = 22
-#    to_port     = 22
-#    protocol    = "tcp"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-
-#  ingress {
-#    description = "HTTP"
-#    from_port   = 80
-#    to_port     = 80
-#    protocol    = "tcp"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-
-#  ingress {
-#    description = "HTTPS"
-#    from_port   = 443
-#    to_port     = 443
-#    protocol    = "tcp"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-
-#  egress {
-#    from_port   = 0
-#    to_port     = 0
-#    protocol    = "-1"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-
-#  tags = {
-#    Name = "allow-ssh-http"
-#  }
-#}
-
 
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = var.instance_type
 
-  subnet_id              = aws_subnet.public_subnet.id
-  vpc_security_group_ids = [module.web-security-group.security_group_id]
+  vpc_security_group_ids = [module.web_security_group.security_group_id]
+  subnet_id              = module.web_vpc.public_subnets[0]
 
   tags = {
     Name = "HelloWorld"
   }
 }
 
-module "web-security-group" {
+module "web_vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = "dev"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-west-2a", "us-west-2b"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+
+  tags = {
+    Terraform = "true"
+    Environment = "dev"
+  }
+}
+
+module "web_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.3.1"
   name = "web_sg"
 
-  vpc_id              = aws_vpc.main.id
+  vpc_id              = module.web_vpc.vpc_id
 
   ingress_rules       = ["http-80-tcp","https-443-tcp"]
   ingress_cidr_blocks = ["0.0.0.0/0"]

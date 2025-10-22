@@ -134,7 +134,7 @@ resource "aws_instance" "web" {
 module "web-security-group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.3.1"
-  name = web
+  name = web_sg
 
   vpc_id              = aws_vpc.main.id
 

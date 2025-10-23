@@ -18,63 +18,63 @@ data "aws_ami" "app_ami" {
 # ------------------------------
 # 1. Create VPC
 # ------------------------------
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags = {
-    Name = "my-vpc"
-  }
-}
+#resource "aws_vpc" "main" {
+#  cidr_block           = "10.0.0.0/16"
+#  enable_dns_support   = true
+#  enable_dns_hostnames = true
+#  tags = {
+#    Name = "my-vpc"
+#  }
+#}
 
 # ------------------------------
 # 2. Create Subnet
 # ------------------------------
-resource "aws_subnet" "public_subnet" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone       = "us-west-2a"
-
-  tags = {
-    Name = "public-subnet"
-  }
-}
+#resource "aws_subnet" "public_subnet" {
+#  vpc_id                  = aws_vpc.main.id
+#  cidr_block              = "10.0.1.0/24"
+#  map_public_ip_on_launch = true
+#  availability_zone       = "us-west-2a"
+#
+#  tags = {
+#    Name = "public-subnet"
+#  }
+#}
 
 
 # ------------------------------
 # 3. Create Internet Gateway
 # ------------------------------
-resource "aws_internet_gateway" "igw" {
-  vpc_id = module.web_vpc.vpc_id
-  tags = {
-    Name = "my-igw"
-  }
-}
+#resource "aws_internet_gateway" "igw" {
+#  vpc_id = aws_vpc.main.id
+#  tags = {
+#    Name = "my-igw"
+#  }
+#}
 
 # ------------------------------
 # 4. Create Route Table and Route
 # ------------------------------
-resource "aws_route_table" "public_rt" {
-  vpc_id = module.web_vpc.vpc_id
-  tags = {
-    Name = "public-route-table"
-  }
-}
+#resource "aws_route_table" "public_rt" {
+#  vpc_id = aws_vpc.main.id
+#  tags = {
+#    Name = "public-route-table"
+#  }
+#}
 
-resource "aws_route" "internet_access" {
-  route_table_id         = aws_route_table.public_rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.igw.id
-}
+#resource "aws_route" "internet_access" {
+#  route_table_id         = aws_route_table.public_rt.id
+#  destination_cidr_block = "0.0.0.0/0"
+#  gateway_id             = aws_internet_gateway.igw.id
+#}
 
 # ------------------------------
 # 5. Associate Subnet with Route Table
 # ------------------------------
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = module.web_vpc.public_subnets[0]
-  route_table_id = aws_route_table.public_rt.id
-}
+#resource "aws_route_table_association" "public_assoc" {
+#  subnet_id      = aws_subnet.public_subnet.id
+#  route_table_id = aws_route_table.public_rt.id
+#}
 
 
 resource "aws_instance" "web" {
@@ -95,8 +95,8 @@ module "web_vpc" {
   name = "dev"
   cidr = "10.0.0.0/16"
 
-  azs             = ["us-west-2a", "us-west-2b"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+  azs             = ["us-west-2a"]
+  public_subnets  = ["10.0.1.0/24"]
 
   tags = {
     Terraform = "true"

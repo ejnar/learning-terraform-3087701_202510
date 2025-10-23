@@ -85,7 +85,7 @@ resource "aws_instance" "web" {
   vpc_security_group_ids = [module.web_security_group.security_group_id]
   
   associate_public_ip_address = true  # 👈 Required for public DNS
-  
+
   tags = {
     Name = "HelloWorld"
   }
@@ -93,7 +93,7 @@ resource "aws_instance" "web" {
 
 module "web_vpc" {
   source = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+  version = "6.5.0"
 
   name = "dev"
   cidr = "10.0.0.0/16"

@@ -39,20 +39,15 @@ module "alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_security_group.security_group_id]
 
-  target_groups = [
-    {
+  target_groups = {
+    ex-instance = {
       name_prefix      = "web-"
       protocol         = "HTTP"
       port             = 80
       target_type      = "instance"
-      targets = {
-        my_targets = {
-          target_id = aws_instance.web.id
-          port = 80
-        }
-      }        
+      target_id        = aws_instance.web.id
     }
-  ]
+  }
 
   listeners = {
     ex-http = {

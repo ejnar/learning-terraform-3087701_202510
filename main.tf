@@ -51,9 +51,10 @@ module "alb" {
 
   listeners = {
     ex-http = {
-      port               = 80
-      protocol           = "HTTP"
-      # target_group_index = 0
+      port                = 80
+      protocol            = "HTTP"
+      default_action_type = "forward"
+      target_group_index  = 0
     }
   }
 

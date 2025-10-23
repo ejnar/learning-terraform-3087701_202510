@@ -14,41 +14,48 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
-resource "aws_instance" "web" {
-  ami           = data.aws_ami.app_ami.id
-  instance_type = var.instance_type
+module "web_vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  version = "6.5.0"
 
-  subnet_id              = module.web_vpc.public_subnets[0] 
-  vpc_security_group_ids = [module.web_security_group.security_group_id]
-  
-  associate_public_ip_address = true  # 👈 Required for public DNS
+  name = "dev"
+  cidr = "10.0.0.0/16"
+
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  azs             = ["us-west-2a", "us-west-2b"]
+  public_subnets  = ["10.0.1.0/24","10.0.2.0/24"]
+  private_subnets = ["10.0.5.0/24","10.0.6.0/24"]
+
+  enable_nat_gateway = false
+  enable_vpn_gateway = false
 
   tags = {
-    Name = "HelloWorld"
+    Terraform = "true"
     Environment = "dev"
   }
 }
 
-# ========================
-# 4. ALB Target Group
-# ========================
-#resource "aws_lb_target_group" "web" {
-#  name     = "web-tg"
-#  port     = 80
-#  protocol = "HTTP"
-#  vpc_id   = module.web_vpc.vpc_id
-#
-#  health_check {
-#    path                = "/"
-#    protocol            = "HTTP"
-#    interval            = 30
-#    timeout             = 5
-#    healthy_threshold   = 5
-#    unhealthy_threshold = 2
-#  }
-#}
 
-module "alb" {
+
+module "autoscaling" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "6.5.2"
+  name = "web"
+  
+  min_size = 1
+  max_size = 2
+
+  vpc_zone_identifier = module.web_vpc.public_subnets
+  target_group_arns   = module.web_alb.target_group_arns
+  security_groups     = [module.web_sg.security_group_id]
+
+  instance_type       = var.instance_type
+  image_id            = data.aws_ami.app_ami.id
+}
+
+module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
   version = "~> 6.0"
 
@@ -57,7 +64,7 @@ module "alb" {
 
   vpc_id          = module.web_vpc.vpc_id
   subnets         = module.web_vpc.public_subnets 
-  security_groups = [module.web_security_group.security_group_id]
+  security_groups = [module.web_sg.security_group_id]
 
   target_groups = [
     {
@@ -87,31 +94,7 @@ module "alb" {
   }
 }
 
-
-module "web_vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-  version = "6.5.0"
-
-  name = "dev"
-  cidr = "10.0.0.0/16"
-
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  azs             = ["us-west-2a", "us-west-2b"]
-  public_subnets  = ["10.0.1.0/24","10.0.2.0/24"]
-  private_subnets = ["10.0.5.0/24","10.0.6.0/24"]
-
-  enable_nat_gateway = false
-  enable_vpn_gateway = false
-
-  tags = {
-    Terraform = "true"
-    Environment = "dev"
-  }
-}
-
-module "web_security_group" {
+module "web_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.3.1"
   name = "web_sg"

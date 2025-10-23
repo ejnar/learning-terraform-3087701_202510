@@ -32,21 +32,21 @@ resource "aws_instance" "web" {
 # ========================
 # 4. ALB Target Group
 # ========================
-resource "aws_lb_target_group" "web" {
-  name     = "web-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = module.web_vpc.vpc_id
-
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-  }
-}
+#resource "aws_lb_target_group" "web" {
+#  name     = "web-tg"
+#  port     = 80
+#  protocol = "HTTP"
+#  vpc_id   = module.web_vpc.vpc_id
+#
+#  health_check {
+#    path                = "/"
+#    protocol            = "HTTP"
+#    interval            = 30
+#    timeout             = 5
+#    healthy_threshold   = 5
+#    unhealthy_threshold = 2
+#  }
+#}
 
 module "alb" {
   source = "terraform-aws-modules/alb/aws"

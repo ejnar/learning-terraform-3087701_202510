@@ -15,67 +15,6 @@ data "aws_ami" "app_ami" {
 }
 
 
-# ------------------------------
-# 1. Create VPC
-# ------------------------------
-#resource "aws_vpc" "main" {
-#  cidr_block           = "10.0.0.0/16"
-#  enable_dns_support   = true
-#  enable_dns_hostnames = true
-#  tags = {
-#    Name = "my-vpc"
-#  }
-#}
-
-# ------------------------------
-# 2. Create Subnet
-# ------------------------------
-#resource "aws_subnet" "public_subnet" {
-#  vpc_id                  = aws_vpc.main.id
-#  cidr_block              = "10.0.1.0/24"
-#  map_public_ip_on_launch = true
-#  availability_zone       = "us-west-2a"
-#
-#  tags = {
-#    Name = "public-subnet"
-#  }
-#}
-
-
-# ------------------------------
-# 3. Create Internet Gateway
-# ------------------------------
-#resource "aws_internet_gateway" "igw" {
-#  vpc_id = aws_vpc.main.id
-#  tags = {
-#    Name = "my-igw"
-#  }
-#}
-
-# ------------------------------
-# 4. Create Route Table and Route
-# ------------------------------
-#resource "aws_route_table" "public_rt" {
-#  vpc_id = aws_vpc.main.id
-#  tags = {
-#    Name = "public-route-table"
-#  }
-#}
-
-#resource "aws_route" "internet_access" {
-#  route_table_id         = aws_route_table.public_rt.id
-#  destination_cidr_block = "0.0.0.0/0"
-#  gateway_id             = aws_internet_gateway.igw.id
-#}
-
-# ------------------------------
-# 5. Associate Subnet with Route Table
-# ------------------------------
-#resource "aws_route_table_association" "public_assoc" {
-#  subnet_id      = aws_subnet.public_subnet.id
-#  route_table_id = aws_route_table.public_rt.id
-#}
-
 
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
@@ -88,6 +27,7 @@ resource "aws_instance" "web" {
 
   tags = {
     Name = "HelloWorld"
+    Environment = "dev"
   }
 }
 

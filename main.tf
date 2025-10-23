@@ -29,8 +29,28 @@ resource "aws_instance" "web" {
   }
 }
 
+# ========================
+# 4. ALB Target Group
+# ========================
+resource "aws_lb_target_group" "web" {
+  name     = "web-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = module.web_vpc.vpc_id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+  }
+}
+
 module "alb" {
   source = "terraform-aws-modules/alb/aws"
+  version = "~> 6.0"
 
   name               = "web-alb"
   load_balancer_type = "application"
@@ -39,24 +59,28 @@ module "alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_security_group.security_group_id]
 
-  target_groups = {
-    ex-instance = {
+  target_groups = [
+    {
       name_prefix      = "web-"
-      protocol         = "HTTP"
-      port             = 80
+      backend_protocol = "HTTP"
+      backend_port     = 80
       target_type      = "instance"
-      target_id        = aws_instance.web.id
+      targets = {
+        my_target = {
+          target_id = aws_instance.web.id
+          port = 80
+        }
+      }
     }
-  }
+  ]
 
-  listeners = {
-    ex-http = {
-      port                = 80
-      protocol            = "HTTP"
-      default_action_type = "forward"
-      target_group_index  = 0
+  http_tcp_listeners = [
+    {
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
     }
-  }
+  ]
 
   tags = {
     Environment = "dev"

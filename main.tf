@@ -95,6 +95,9 @@ module "web_vpc" {
   name = "dev"
   cidr = "10.0.0.0/16"
 
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
   azs             = ["us-west-2a"]
   public_subnets  = ["10.0.1.0/24"]
 
@@ -116,5 +119,10 @@ module "web_security_group" {
 
   egress_rules        = ["all-all"]
   egress_cidr_blocks  = ["0.0.0.0/0"]
+
+  tags = {
+    Terraform = "true"
+    Environment = "dev"
+  }
 
 }

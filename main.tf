@@ -39,7 +39,7 @@ module "web_vpc" {
 
 module "autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "6.7.0"
+  version = "6.5.0"
   name = "web"
   
   min_size = 1

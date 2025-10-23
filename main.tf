@@ -14,8 +14,6 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
-
-
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = var.instance_type
@@ -30,6 +28,41 @@ resource "aws_instance" "web" {
     Environment = "dev"
   }
 }
+
+module "alb" {
+  source = "terraform-aws-modules/alb/aws"
+
+  name               = "web-alb"
+  load_balancer_type = "application"
+
+  vpc_id          = module.web_vpc.vpc_id
+  subnets         = module.web_vpc.public_subnets 
+  security_groups = module.web_security_group.security_group_id
+
+  target_groups = {
+    ex-instance = {
+      name_prefix      = "web-"
+      protocol         = "HTTP"
+      port             = 80
+      target_type      = "instance"
+      target_id        = aws_instance.web.id
+    }
+  }
+
+  listeners = {
+    ex-http-https-redirect = {
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
+    }
+  }
+
+  tags = {
+    Environment = "Dev"
+    Project     = "Example"
+  }
+}
+
 
 module "web_vpc" {
   source = "terraform-aws-modules/vpc/aws"

@@ -81,9 +81,11 @@ resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = var.instance_type
 
+  subnet_id              = module.web_vpc.public_subnets[0] 
   vpc_security_group_ids = [module.web_security_group.security_group_id]
-  subnet_id              = module.web_vpc.public_subnets[0]
-
+  
+  associate_public_ip_address = true  # 👈 Required for public DNS
+  
   tags = {
     Name = "HelloWorld"
   }
@@ -91,6 +93,7 @@ resource "aws_instance" "web" {
 
 module "web_vpc" {
   source = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
 
   name = "dev"
   cidr = "10.0.0.0/16"
@@ -101,6 +104,9 @@ module "web_vpc" {
   azs             = ["us-west-2a"]
   public_subnets  = ["10.0.1.0/24"]
   private_subnets = ["10.0.3.0/24"]
+
+  enable_nat_gateway = false
+  enable_vpn_gateway = false
 
   tags = {
     Terraform = "true"

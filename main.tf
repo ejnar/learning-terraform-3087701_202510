@@ -55,7 +55,7 @@ module "web_vpc" {
 
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
-  version = "~> 6.0"
+  version = "~> 10.0"
 
   name               = "web-alb"
   load_balancer_type = "application"
@@ -64,22 +64,21 @@ module "web_alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_sg.security_group_id]
 
-  target_groups = [
-    {
+  listeners = {
+    ex-http-https-redirect = {
+      port     = 80
+      protocol = "HTTP"
+    }
+  }
+
+  target_groups = {
+    ex-instance = {
       name_prefix      = "web-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
+      protocol         = "HTTP"
+      port             = 80
       target_type      = "instance"
     }
-  ]
-
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "HTTP"
-      target_group_index = 0
-    }
-  ]
+  }
 
   tags = {
     Environment = "dev"

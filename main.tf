@@ -68,6 +68,23 @@ resource "aws_instance" "web" {
 #  image_id            = data.aws_ami.app_ami.id
 #}
 
+resource "aws_lb_target_group" "web" {
+  name     = "web-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = module.web_vpc.vpc_id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+  }
+}
+
+
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
   version = "~> 10.0"
@@ -83,6 +100,8 @@ module "web_alb" {
     ex-http-https-redirect = {
       port     = 80
       protocol = "HTTP"
+      default_action_type = "forward"
+      target_group_arn    = aws_lb_target_group.web.arn
     }
   }
 

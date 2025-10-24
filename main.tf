@@ -106,6 +106,7 @@ module "web_alb" {
       port                = 80
       protocol            = "HTTP"
       default_action_type = "forward"
+      target_group_index  = 0
       target_group_arn    = aws_lb_target_group.web.arn
     }
   ]

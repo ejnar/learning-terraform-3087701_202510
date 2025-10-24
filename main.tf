@@ -46,7 +46,10 @@ resource "aws_instance" "web" {
 
   associate_public_ip_address = true # 👈 Required for public DNS
 
-  tags = { Name = "HelloWorld" Environment = "dev" } 
+  tags = { 
+    Name = "HelloWorld" 
+    Environment = "dev" 
+  } 
 }
 
 #module "autoscaling" {

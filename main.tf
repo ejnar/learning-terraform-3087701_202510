@@ -37,21 +37,21 @@ module "web_vpc" {
   }
 }
 
-module "autoscaling" {
-  source  = "terraform-aws-modules/autoscaling/aws"
-  version = "6.5.2"
-  name = "web"
-  
-  min_size = 1
-  max_size = 2
-
-  vpc_zone_identifier = module.web_vpc.public_subnets
-  target_group_arns   = module.web_alb.target_group_arns
-  security_groups     = [module.web_sg.security_group_id]
-
-  instance_type       = var.instance_type
-  image_id            = data.aws_ami.app_ami.id
-}
+#module "autoscaling" {
+#  source  = "terraform-aws-modules/autoscaling/aws"
+#  version = "6.5.2"
+#  name = "web"
+#  
+#  min_size = 1
+#  max_size = 2
+#
+#  vpc_zone_identifier = module.web_vpc.public_subnets
+#  target_group_arns   = module.web_alb.target_group_arns
+#  security_groups     = [module.web_sg.security_group_id]
+#
+#  instance_type       = var.instance_type
+#  image_id            = data.aws_ami.app_ami.id
+#}
 
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"

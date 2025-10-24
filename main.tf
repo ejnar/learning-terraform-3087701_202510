@@ -86,7 +86,7 @@ resource "aws_lb_target_group" "web" {
 
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
-  version = "~> 8.0"
+  version = "~> 10.0"
 
   name               = "web-alb"
   load_balancer_type = "application"
@@ -96,35 +96,27 @@ module "web_alb" {
   security_groups = [module.web_sg.security_group_id]
 
   # Access logs (optional)
-  enable_deletion_protection = false
-  internal                   = false
-  idle_timeout               = 60
+  #enable_deletion_protection = false
+  #internal                   = false
+  #idle_timeout               = 60
 
-  target_groups = [
-    {
+listeners = {
+    ex-http = {
+      port     = 80
+      protocol = "HTTP"
+      target_group_index  = 0
+    }
+  }
+
+  target_groups = {
+    ex-instance = {
       name_prefix      = "web-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
+      protocol         = "HTTP"
+      port             = 80
       target_type      = "instance"
-      targets = {
-        my_target = {
-          target_id = aws_instance.web.id
-          port = 80
-        }
-      }
+      target_id        = aws_instance.web.id
     }
-  ]
-
-  # Listener for HTTP
-  http_tcp_listeners = [
-    {
-      port                = 80
-      protocol            = "HTTP"
-      default_action_type = "forward"
-      #target_group_index  = 0
-      target_group_arn    = aws_lb_target_group.web.arn
-    }
-  ]
+  }
 
   tags = {
     Environment = "dev"

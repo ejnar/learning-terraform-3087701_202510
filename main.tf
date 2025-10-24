@@ -37,6 +37,18 @@ module "web_vpc" {
   }
 }
 
+resource "aws_instance" "web" { 
+  ami = data.aws_ami.app_ami.id 
+  instance_type = var.instance_type
+
+  subnet_id = module.web_vpc.public_subnets[0] 
+  vpc_security_group_ids = [module.web_sg.security_group_id]
+
+  associate_public_ip_address = true # 👈 Required for public DNS
+
+  tags = { Name = "HelloWorld" Environment = "dev" } 
+}
+
 #module "autoscaling" {
 #  source  = "terraform-aws-modules/autoscaling/aws"
 #  version = "6.5.2"
@@ -77,6 +89,7 @@ module "web_alb" {
       protocol         = "HTTP"
       port             = 80
       target_type      = "instance"
+      target_id        = aws_instance.web.id  
     }
   }
 

@@ -95,7 +95,13 @@ module "web_alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_sg.security_group_id]
 
-  listener_http = [
+  # Access logs (optional)
+  enable_deletion_protection = false
+  internal                   = false
+  idle_timeout               = 60
+
+  # Listener for HTTP
+  http_tcp_listener = [
     {
       port                = 80
       protocol            = "HTTP"
@@ -111,7 +117,7 @@ module "web_alb" {
 
 module "web_sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+  version = "~> 5.0"
   name = "web_sg"
 
   vpc_id              = module.web_vpc.vpc_id

@@ -100,6 +100,22 @@ module "web_alb" {
   internal                   = false
   idle_timeout               = 60
 
+  target_groups = [
+    {
+      name_prefix      = "web-"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+      targets = {
+        my_target = {
+          target_id = aws_instance.web.id
+          port = 80
+        }
+      }
+    }
+  ]
+
+
   # Listener for HTTP
   http_tcp_listeners = [
     {

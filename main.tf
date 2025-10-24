@@ -101,7 +101,7 @@ module "web_alb" {
   idle_timeout               = 60
 
   # Listener for HTTP
-  http_tcp_listener = [
+  http_tcp_listeners = [
     {
       port                = 80
       protocol            = "HTTP"

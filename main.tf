@@ -51,7 +51,7 @@ module "web_asg" {
   instance_type       = var.instance_type
   image_id            = data.aws_ami.app_ami.id
   
-  #enable_elastic_gpu_specifications = false
+  enable_elastic_gpu_specifications = false
 
   #load_balancers = [
   #  {

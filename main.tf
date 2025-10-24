@@ -37,7 +37,7 @@ module "web_vpc" {
   }
 }
 
-module "autoscaling" {
+module "web_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 9.0"
   name = "web"
@@ -46,7 +46,7 @@ module "autoscaling" {
   max_size = 2
 
   vpc_zone_identifier = module.web_vpc.public_subnets
-  #target_group_arns   = module.web_alb.target_group_arns
+  target_group_arns   = [aws_lb_target_group.web.arn]
   security_groups     = [module.web_sg.security_group_id]
 
   instance_type       = var.instance_type
@@ -54,6 +54,7 @@ module "autoscaling" {
 
   tags = {
     Environment = "dev"
+    Terraform = "true"
   }
 }
 
@@ -72,24 +73,40 @@ module "web_alb" {
     ex-http = {
       port     = 80
       protocol = "HTTP"
-      forward = {
-        target_group_key = "ex-instance"
-      }
+      default_action_type = "forward"
+      target_group_arn    = aws_lb_target_group.web.arn
     }
   }
 
-  target_groups = {
-    ex-instance = {
-      name_prefix      = "web-"
-      protocol         = "HTTP"
-      port             = 80
-      target_type      = "instance"
-      #target_id        = aws_instance.web.id
-    }
-  }
+  #target_groups = {
+  #  ex-instance = {
+  #    name_prefix      = "web-"
+  #    protocol         = "HTTP"
+  #    port             = 80
+  #    target_type      = "instance"
+  #    #target_id        = aws_instance.web.id
+  #  }
+  #}
 
   tags = {
     Environment = "dev"
+    Terraform = "true"
+  }
+}
+
+resource "aws_lb_target_group" "web" {
+  name     = "web-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = module.web_vpc.vpc_id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
   }
 }
 

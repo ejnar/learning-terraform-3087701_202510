@@ -37,36 +37,25 @@ module "web_vpc" {
   }
 }
 
-resource "aws_instance" "web" { 
-  ami = data.aws_ami.app_ami.id 
-  instance_type = var.instance_type
+module "autoscaling" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "~> 9.0"
+  name = "web"
+  
+  min_size = 1
+  max_size = 2
 
-  subnet_id = module.web_vpc.public_subnets[0] 
-  vpc_security_group_ids = [module.web_sg.security_group_id]
+  vpc_zone_identifier = module.web_vpc.public_subnets
+  target_group_arns   = module.web_alb.target_group_arns
+  security_groups     = [module.web_sg.security_group_id]
 
-  associate_public_ip_address = true # 👈 Required for public DNS
+  instance_type       = var.instance_type
+  image_id            = data.aws_ami.app_ami.id
 
-  tags = { 
-    Name = "HelloWorld" 
-    Environment = "dev" 
-  } 
+  tags = {
+    Environment = "dev"
+  }
 }
-
-#module "autoscaling" {
-#  source  = "terraform-aws-modules/autoscaling/aws"
-#  version = "6.5.2"
-#  name = "web"
-#  
-#  min_size = 1
-#  max_size = 2
-#
-#  vpc_zone_identifier = module.web_vpc.public_subnets
-#  target_group_arns   = module.web_alb.target_group_arns
-#  security_groups     = [module.web_sg.security_group_id]
-#
-#  instance_type       = var.instance_type
-#  image_id            = data.aws_ami.app_ami.id
-#}
 
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"

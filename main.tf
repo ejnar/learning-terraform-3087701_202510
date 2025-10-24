@@ -84,10 +84,9 @@ resource "aws_lb_target_group" "web" {
   }
 }
 
-
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
-  version = "~> 10.0"
+  version = "~> 8.0"
 
   name               = "web-alb"
   load_balancer_type = "application"
@@ -96,24 +95,14 @@ module "web_alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_sg.security_group_id]
 
-  listeners = {
-    ex-http-https-redirect = {
-      port     = 80
-      protocol = "HTTP"
+  listener_http = [
+    {
+      port                = 80
+      protocol            = "HTTP"
       default_action_type = "forward"
       target_group_arn    = aws_lb_target_group.web.arn
     }
-  }
-
-  target_groups = {
-    ex-instance = {
-      name_prefix      = "web-"
-      protocol         = "HTTP"
-      port             = 80
-      target_type      = "instance"
-      target_id        = aws_instance.web.id  
-    }
-  }
+  ]
 
   tags = {
     Environment = "dev"

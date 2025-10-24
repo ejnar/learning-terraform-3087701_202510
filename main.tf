@@ -68,22 +68,6 @@ resource "aws_instance" "web" {
 #  image_id            = data.aws_ami.app_ami.id
 #}
 
-resource "aws_lb_target_group" "web" {
-  name     = "web-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = module.web_vpc.vpc_id
-
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-  }
-}
-
 module "web_alb" {
   source = "terraform-aws-modules/alb/aws"
   version = "~> 10.0"
@@ -95,21 +79,13 @@ module "web_alb" {
   subnets         = module.web_vpc.public_subnets 
   security_groups = [module.web_sg.security_group_id]
 
-  # Access logs (optional)
-  #enable_deletion_protection = false
-  #internal                   = false
-  #idle_timeout               = 60
-
-listeners = {
+  listeners = {
     ex-http = {
       port     = 80
       protocol = "HTTP"
       forward = {
         target_group_key = "ex-instance"
       }
-      #default_action_type = "forward"
-      #target_group_index  = 0
-      #target_group_arn    = aws_lb_target_group.web.arn
     }
   }
 

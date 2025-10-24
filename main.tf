@@ -39,7 +39,7 @@ module "web_vpc" {
 
 module "web_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.0"
+  version = "6.5.2"
   name = "web"
   
   min_size = 1
@@ -51,8 +51,8 @@ module "web_asg" {
   instance_type       = var.instance_type
   image_id            = data.aws_ami.app_ami.id
   
-  enable_elastic_gpu_specifications = false
-  
+  #enable_elastic_gpu_specifications = false
+
   #load_balancers = [
   #  {
   #    target_group_arn = aws_lb_target_group.web.arn

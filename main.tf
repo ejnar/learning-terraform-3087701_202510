@@ -59,7 +59,7 @@ module "web_asg" {
   #]
 
   target_group_arns   = [aws_lb_target_group.web.arn]
-  enable_elastic_gpu_specifications = false
+  # enable_elastic_gpu_specifications = false
 
   tags = {
     Environment = "dev"

@@ -42,8 +42,9 @@ module "web_asg" {
   version = "~> 7.0"
   name = "web"
   
-  min_size = 1
-  max_size = 2
+  min_size         = 1
+  max_size         = 2
+  desired_capacity = 1
 
   vpc_zone_identifier = module.web_vpc.public_subnets
   security_groups     = [module.web_sg.security_group_id]

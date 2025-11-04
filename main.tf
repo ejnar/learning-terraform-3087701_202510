@@ -133,9 +133,4 @@ module "asg" {
   # Correct argument for ALB target group attachment
   target_group_arns = [module.alb.target_groups["web"].arn]
 
-  tags = [
-    {
-      key                 = "Demo"
-    }
-  ]
 }

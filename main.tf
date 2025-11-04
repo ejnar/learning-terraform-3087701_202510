@@ -118,14 +118,12 @@ module "asg" {
   name                = "demo-asg"
   min_size            = 1
   max_size            = 2
-  desired_capacity     = 1
+  desired_capacity    = 1
   health_check_type   = "EC2"
   vpc_zone_identifier = module.vpc.public_subnets
 
-  target_group_arns = [module.alb.target_groups["web"].arn]
-
-  launch_template = {
-    name_prefix   = "demo-web-"
+  # Launch template defaults (replaces launch_template)
+  launch_template_defaults = {
     image_id      = data.aws_ami.amazon_linux.id
     instance_type = var.instance_type
     key_name      = var.key_name
@@ -145,6 +143,9 @@ module "asg" {
       }
     ]
   }
+
+  # Attach ALB target groups
+  target_groups = [module.alb.target_groups["web"].arn]
 
   tags = [
     {

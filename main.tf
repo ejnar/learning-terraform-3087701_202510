@@ -1,9 +1,9 @@
 ##############################################
-# VPC Module
+# VPC
 ##############################################
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.1"
+  version = "5.1.2"
 
   name = "demo-vpc"
   cidr = "10.0.0.0/16"
@@ -22,7 +22,7 @@ module "vpc" {
 ##############################################
 module "alb_sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
+  version = "5.1.0"
 
   name        = "alb-sg"
   description = "Allow HTTP access"
@@ -34,11 +34,11 @@ module "alb_sg" {
 }
 
 ##############################################
-# ALB Module
+# ALB (New Syntax for v9+)
 ##############################################
 module "alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.0"
+  version = "9.0.0"
 
   name               = "demo-alb"
   load_balancer_type = "application"
@@ -46,26 +46,29 @@ module "alb" {
   subnets            = module.vpc.public_subnets
   security_groups    = [module.alb_sg.security_group_id]
 
-  http_tcp_listeners = [
-    {
-      port     = 80
-      protocol = "HTTP"
-      action_type = "forward"
-      target_group_index = 0
+  # define listeners (new structure)
+  listeners = {
+    http = {
+      port            = 80
+      protocol        = "HTTP"
+      default_action = {
+        type             = "forward"
+        target_group_key = "web"
+      }
     }
-  ]
+  }
 
-  target_groups = [
-    {
-      name_prefix      = "demo-tg"
+  target_groups = {
+    web = {
       backend_protocol = "HTTP"
       backend_port     = 80
       target_type      = "instance"
       health_check = {
         path = "/"
+        protocol = "HTTP"
       }
     }
-  ]
+  }
 
   tags = {
     Environment = "demo"
@@ -77,7 +80,7 @@ module "alb" {
 ##############################################
 module "ec2_sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
+  version = "5.1.0"
 
   name        = "ec2-sg"
   description = "Allow traffic from ALB"
@@ -96,7 +99,7 @@ module "ec2_sg" {
 }
 
 ##############################################
-# Auto Scaling Group Module
+# Auto Scaling Group
 ##############################################
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -110,7 +113,7 @@ data "aws_ami" "amazon_linux" {
 
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 9.0"
+  version = "9.0.0"
 
   name                = "demo-asg"
   min_size            = 1
@@ -118,7 +121,8 @@ module "asg" {
   desired_capacity     = 1
   health_check_type   = "EC2"
   vpc_zone_identifier = module.vpc.public_subnets
-  target_group_arns   = module.alb.target_group_arns
+
+  target_group_arns = [module.alb.target_groups["web"].arn]
 
   launch_template = {
     name_prefix   = "demo-web-"

@@ -135,9 +135,7 @@ module "asg" {
 
   tags = [
     {
-      key                 = "Name"
-      value               = "demo-instance"
-      propagate_at_launch = true
+      key                 = "Demo"
     }
   ]
 }

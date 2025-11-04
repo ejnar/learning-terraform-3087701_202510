@@ -60,13 +60,27 @@ module "alb" {
 
   target_groups = {
     web = {
+      name_prefix      = "demo-tg"
       backend_protocol = "HTTP"
       backend_port     = 80
       target_type      = "instance"
       health_check = {
-        path = "/"
+        path     = "/"
         protocol = "HTTP"
       }
+
+      targets = [
+        {
+          target_id = "i‑0123456789abcdef0"
+          port      = 80
+        },
+        {
+          target_id = "i‑0fedcba9876543210"
+          port      = 80
+        }
+      ]
+      # Or, if attaching via ASG later:
+      create_attachment = false
     }
   }
 

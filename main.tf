@@ -1,139 +1,152 @@
-data "aws_ami" "app_ami" {
+##############################################
+# VPC Module
+##############################################
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.1"
+
+  name = "demo-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-east-1a", "us-east-1b"]
+  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  enable_nat_gateway = false
+
+  tags = {
+    Environment = "demo"
+  }
+}
+
+##############################################
+# Security Group for ALB
+##############################################
+module "alb_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name        = "alb-sg"
+  description = "Allow HTTP access"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_rules       = ["http-80-tcp"]
+  egress_rules        = ["all-all"]
+}
+
+##############################################
+# ALB Module
+##############################################
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "~> 9.0"
+
+  name               = "demo-alb"
+  load_balancer_type = "application"
+  vpc_id             = module.vpc.vpc_id
+  subnets            = module.vpc.public_subnets
+  security_groups    = [module.alb_sg.security_group_id]
+
+  http_tcp_listeners = [
+    {
+      port     = 80
+      protocol = "HTTP"
+      action_type = "forward"
+      target_group_index = 0
+    }
+  ]
+
+  target_groups = [
+    {
+      name_prefix      = "demo-tg"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+      health_check = {
+        path = "/"
+      }
+    }
+  ]
+
+  tags = {
+    Environment = "demo"
+  }
+}
+
+##############################################
+# Security Group for EC2
+##############################################
+module "ec2_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name        = "ec2-sg"
+  description = "Allow traffic from ALB"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_with_source_security_group_id = [
+    {
+      from_port                = 80
+      to_port                  = 80
+      protocol                 = "tcp"
+      source_security_group_id = module.alb_sg.security_group_id
+    }
+  ]
+
+  egress_rules = ["all-all"]
+}
+
+##############################################
+# Auto Scaling Group Module
+##############################################
+data "aws_ami" "amazon_linux" {
   most_recent = true
+  owners      = ["amazon"]
 
   filter {
     name   = "name"
-    values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["979382823631"] # Bitnami
-}
-
-module "web_vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-  version = "6.5.0"
-
-  name = "dev"
-  cidr = "10.0.0.0/16"
-
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  azs             = ["us-west-2a", "us-west-2b"]
-  public_subnets  = ["10.0.1.0/24","10.0.2.0/24"]
-  private_subnets = ["10.0.5.0/24","10.0.6.0/24"]
-
-  enable_nat_gateway = false
-  enable_vpn_gateway = false
-
-  tags = {
-    Terraform = "true"
-    Environment = "dev"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
 
-module "web_asg" {
+module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.0"
-  name = "web"
-  
-  min_size         = 1
-  max_size         = 2
-  desired_capacity = 1
+  version = "~> 9.0"
 
-  vpc_zone_identifier = module.web_vpc.public_subnets
-  security_groups     = [module.web_sg.security_group_id]
+  name                = "demo-asg"
+  min_size            = 1
+  max_size            = 2
+  desired_capacity     = 1
+  health_check_type   = "EC2"
+  vpc_zone_identifier = module.vpc.public_subnets
+  target_group_arns   = module.alb.target_group_arns
 
-  instance_type       = var.instance_type
-  image_id            = data.aws_ami.app_ami.id
-  
-  #load_balancers = [
-  #  {
-  #    target_group_arn = aws_lb_target_group.web.arn
-  #  }
-  #]
+  launch_template = {
+    name_prefix   = "demo-web-"
+    image_id      = data.aws_ami.amazon_linux.id
+    instance_type = var.instance_type
+    key_name      = var.key_name
 
-  target_group_arns   = [aws_lb_target_group.web.arn]
-  # enable_elastic_gpu_specifications = false
+    user_data = base64encode(<<-EOF
+                #!/bin/bash
+                yum install -y httpd
+                echo "Hello from $(hostname)" > /var/www/html/index.html
+                systemctl enable httpd
+                systemctl start httpd
+                EOF
+    )
 
-  tags = {
-    Environment = "dev"
-    Terraform = "true"
+    network_interfaces = [
+      {
+        security_groups = [module.ec2_sg.security_group_id]
+      }
+    ]
   }
-}
 
-module "web_alb" {
-  source = "terraform-aws-modules/alb/aws"
-  version = "~> 10.0"
-
-  name               = "web-alb"
-  load_balancer_type = "application"
-
-  vpc_id          = module.web_vpc.vpc_id
-  subnets         = module.web_vpc.public_subnets 
-  security_groups = [module.web_sg.security_group_id]
-
-  listeners = {
-    ex-http = {
-      port     = 80
-      protocol = "HTTP"
-      default_action_type = "forward"
-      target_group_arn    = aws_lb_target_group.web.arn
+  tags = [
+    {
+      key                 = "Name"
+      value               = "demo-instance"
+      propagate_at_launch = true
     }
-  }
-
-  #target_groups = {
-  #  ex-instance = {
-  #    name_prefix      = "web-"
-  #    protocol         = "HTTP"
-  #    port             = 80
-  #    target_type      = "instance"
-  #    #target_id        = aws_instance.web.id
-  #  }
-  #}
-
-  tags = {
-    Environment = "dev"
-    Terraform = "true"
-  }
-}
-
-resource "aws_lb_target_group" "web" {
-  name     = "web-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = module.web_vpc.vpc_id
-
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-  }
-}
-
-module "web_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-  name = "web_sg"
-
-  vpc_id              = module.web_vpc.vpc_id
-
-  ingress_rules       = ["http-80-tcp","https-443-tcp"]
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-
-  egress_rules        = ["all-all"]
-  egress_cidr_blocks  = ["0.0.0.0/0"]
-
-  tags = {
-    Terraform = "true"
-    Environment = "dev"
-  }
+  ]
 }

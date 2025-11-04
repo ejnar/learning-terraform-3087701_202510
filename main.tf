@@ -130,8 +130,8 @@ module "asg" {
   key_name      = var.key_name
   security_groups = [module.ec2_sg.security_group_id]
 
-  # Attach ASG to ALB target group
-  load_balancer_arns = [module.alb.target_groups["web"].arn]
+  # Correct argument for ALB target group attachment
+  target_group_arns = [module.alb.target_groups["web"].arn]
 
   tags = [
     {

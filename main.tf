@@ -60,7 +60,7 @@ module "alb" {
 
   target_groups = {
     web = {
-      name_prefix      = "demo-tg"
+      name             = "demo-tg"
       backend_protocol = "HTTP"
       backend_port     = 80
       target_type      = "instance"
